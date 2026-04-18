@@ -172,11 +172,11 @@ export default function Dashboard() {
   const fetchAccessData = useCallback(async () => {
     if (!activeProfile) return;
     const now = new Date().toISOString();
-    
+
     const { data: st } = await supabase.from('share_tokens')
       .select('*').eq('patient_id', activeProfile.id).gte('expires_at', now);
     setActiveSessions(st || []);
-    
+
     const { data: ah } = await supabase.from('audit_logs')
       .select('*').eq('patient_id', activeProfile.id).eq('action', 'doctor_viewed')
       .order('created_at', { ascending: false }).limit(5);
@@ -189,7 +189,7 @@ export default function Dashboard() {
       .eq('patient_id', activeProfile.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => setRecords(data || []));
-      
+
     fetchAccessData();
   }, [activeProfile, fetchAccessData]);
 
@@ -238,7 +238,7 @@ export default function Dashboard() {
       setUploadProgress(40);
       const { data: { publicUrl } } = supabase.storage.from('medical_records').getPublicUrl(path);
       setUploadProgress(60);
-      const res = await fetch('http://localhost:5002/api/analyze-prescription', {
+      const res = await fetch('https://medbridge-ai-backend.onrender.com/api/analyze-prescription', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: publicUrl })
       });
@@ -274,7 +274,7 @@ export default function Dashboard() {
   const handleGenerateBrief = useCallback(async () => {
     setLoadingBrief(true);
     try {
-      const res = await fetch('http://localhost:5002/api/generate-summary', {
+      const res = await fetch('https://medbridge-ai-backend.onrender.com/api/generate-summary', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records, patientName: activeProfile?.full_name })
       });
@@ -789,7 +789,7 @@ export default function Dashboard() {
                       <span className="section-link" style={{ color: '#ef4444' }} onClick={handleRevokeAccess}>Revoke All</span>
                     )}
                   </div>
-                  
+
                   {activeSessions.length > 0 && (
                     <div style={{ background: 'var(--bg-subtle)', padding: '10px 12px', borderRadius: 'var(--r-md)', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
@@ -814,21 +814,21 @@ export default function Dashboard() {
                                 Health Vault Accessed
                               </div>
                               <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                {d.toLocaleDateString()} at {d.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
+                                {d.toLocaleDateString()} at {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </div>
                           </div>
                         );
                       })}
-                      <button 
-                        onClick={handleGenerateBrief} 
+                      <button
+                        onClick={handleGenerateBrief}
                         disabled={loadingBrief}
                         style={{ marginTop: '8px', padding: '8px', width: '100%', background: 'transparent', border: '1px dashed var(--moss-300)', borderRadius: 'var(--r-md)', color: 'var(--moss-600)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
-                        onMouseOver={e => e.currentTarget.style.background='var(--moss-50)'}
-                        onMouseOut={e => e.currentTarget.style.background='transparent'}
+                        onMouseOver={e => e.currentTarget.style.background = 'var(--moss-50)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                       >
-                         <IconSpark size={14} /> 
-                         {loadingBrief ? 'Generating Summary...' : 'Summarize Profile (What Doctors See)'}
+                        <IconSpark size={14} />
+                        {loadingBrief ? 'Generating Summary...' : 'Summarize Profile (What Doctors See)'}
                       </button>
                     </div>
                   )}
