@@ -150,7 +150,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function init() {
       const { data: { user: u } } = await supabase.auth.getUser();
-      if (!u) { navigate('/'); return; }
+      if (!u) { navigate('/', { replace: true }); return; }
       setUser(u);
       try {
         const { data } = await supabase
@@ -248,7 +248,7 @@ export default function Dashboard() {
       setPendingRecord({ file_name: file.name, file_url: publicUrl, document_type: file.type.includes('pdf') ? 'PDF' : 'Image' });
     } catch (err) {
       console.error(err);
-      alert('AI processing error. Is the AI server running on port 5002?');
+      alert('AI processing error. Please try again later.');
     } finally {
       setUploading(false); setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';

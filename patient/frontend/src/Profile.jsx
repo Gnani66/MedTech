@@ -241,7 +241,7 @@ export default function Profile() {
         zIndex: 50
       }}>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(-1)}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '8px 16px',
