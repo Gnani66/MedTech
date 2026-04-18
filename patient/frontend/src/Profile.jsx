@@ -38,7 +38,41 @@ export default function Profile() {
     full_name: '', phone: '', age: '', gender: '',
     blood_group: '', weight_kg: '', height_cm: ''
   });
+  const [showFamilyModal, setShowFamilyModal] = useState(false);
+  const [addingMember, setAddingMember]       = useState(false);
+  const [newMember, setNewMember]             = useState({ full_name: '', age: '', gender: '' });
+
   const navigate = useNavigate();
+
+  const handleAddMember = async () => {
+    if (!newMember.full_name) return alert('Name is required');
+    setAddingMember(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const newId = crypto.randomUUID();
+      const { error } = await supabase.from('user_profiles').insert([{
+        id: newId,
+        parent_id: user.id,
+        full_name: newMember.full_name,
+        age: newMember.age === '' || newMember.age == null ? null : parseInt(newMember.age, 10),
+        gender: newMember.gender,
+        updated_at: new Date().toISOString(),
+      }]);
+      
+      if (error) throw error;
+      
+      alert(`Successfully added ${newMember.full_name} to your Family Vault.`);
+      setShowFamilyModal(false);
+      setNewMember({ full_name: '', age: '', gender: '' });
+      // Dashboard will auto-fetch the updated profiles on mount.
+    } catch (err) {
+      alert("Failed to add family member: " + err.message);
+    } finally {
+      setAddingMember(false);
+    }
+  };
 
   useEffect(() => {
     async function loadProfileData() {
@@ -49,7 +83,7 @@ export default function Profile() {
             .from('user_profiles')
             .select('*')
             .eq('id', user.id)
-            .single();
+            .maybeSingle(); // 👈 Fixes 406 Not Acceptable when 0 rows are found
           if (error && error.code !== 'PGRST116') throw error;
           if (data) setProfile(data);
         }
@@ -70,6 +104,9 @@ export default function Profile() {
       const { error } = await supabase.from('user_profiles').upsert({
         id: user.id,
         ...profile,
+        age: profile.age === '' || profile.age == null ? null : parseInt(profile.age, 10),
+        weight_kg: profile.weight_kg === '' || profile.weight_kg == null ? null : parseInt(profile.weight_kg, 10),
+        height_cm: profile.height_cm === '' || profile.height_cm == null ? null : parseInt(profile.height_cm, 10),
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
@@ -505,7 +542,7 @@ export default function Profile() {
             </p>
 
             <button
-              onClick={() => alert("Ready for the next step: Family Vault!")}
+              onClick={() => setShowFamilyModal(true)}
               style={{
                 padding: '12px 24px',
                 borderRadius: '9999px',
@@ -530,6 +567,62 @@ export default function Profile() {
         </div>
 
       </div>
+
+      {/* ── Family Modal ── */}
+      {showFamilyModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(15,15,12,0.50)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 200, padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--bg-surface)',
+            borderRadius: '24px',
+            width: '100%', maxWidth: '440px',
+            padding: '32px',
+            boxShadow: 'var(--shadow-lg)',
+            border: '1px solid var(--border)',
+            position: 'relative'
+          }}>
+            <button
+               onClick={() => setShowFamilyModal(false)}
+               style={{ position: 'absolute', top: '24px', right: '28px', color: 'var(--text-muted)', fontSize: '24px', cursor: 'pointer' }}
+            >×</button>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Add Family Member</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>Creates a dependent profile linked to your vault.</p>
+
+            <label style={labelStyle}>Full Name</label>
+            <input type="text" style={{...fieldStyle, marginBottom: '16px'}} value={newMember.full_name} onChange={e => setNewMember({...newMember, full_name: e.target.value})} placeholder="Dependent's Name" />
+            
+            <label style={labelStyle}>Age</label>
+            <input type="number" style={{...fieldStyle, marginBottom: '16px'}} value={newMember.age} onChange={e => setNewMember({...newMember, age: e.target.value})} placeholder="e.g. 8" />
+
+            <label style={labelStyle}>Gender</label>
+            <select style={{...selectStyle, marginBottom: '24px'}} value={newMember.gender} onChange={e => setNewMember({...newMember, gender: e.target.value})}>
+               <option value="">Select</option>
+               <option value="Male">Male</option>
+               <option value="Female">Female</option>
+               <option value="Other">Other</option>
+            </select>
+
+            <button
+               onClick={handleAddMember}
+               disabled={addingMember}
+               style={{
+                  width: '100%', padding: '14px', borderRadius: '9999px',
+                  background: addingMember ? 'var(--moss-400)' : 'var(--moss-500)',
+                  color: 'white', fontWeight: 700, fontSize: '14px', cursor: addingMember ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none'
+               }}
+            >
+               {addingMember ? 'Adding...' : 'Add Dependent Profile'}
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

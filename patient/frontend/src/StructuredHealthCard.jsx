@@ -1,14 +1,21 @@
-// src/StructuredHealthCard.jsx
+// src/StructuredHealthCard.jsx — Upgraded for Clinical Intelligence Engine
 import React from 'react';
+
+// Risk score badge inline
+function RiskScoreBadge({ score }) {
+  if (!score) return null;
+  const cls = score <= 3 ? 'risk-score-low' : score <= 6 ? 'risk-score-medium' : 'risk-score-high';
+  const icon = score <= 3 ? '🟢' : score <= 6 ? '🟡' : '🔴';
+  return (
+    <span className={`risk-score-badge ${cls}`} title="AI Clinical Risk Score (1-10)">
+      {icon} Risk {score}/10
+    </span>
+  );
+}
 
 export default function StructuredHealthCard({ textData }) {
   if (!textData) return (
-    <p style={{
-      fontSize: '13px',
-      color: 'var(--text-muted)',
-      fontFamily: 'var(--font-body)',
-      fontStyle: 'italic'
-    }}>
+    <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
       No data available.
     </p>
   );
@@ -18,21 +25,14 @@ export default function StructuredHealthCard({ textData }) {
     parsedData = JSON.parse(textData);
   } catch {
     return (
-      <p style={{
-        whiteSpace: 'pre-wrap',
-        fontSize: '13.5px',
-        color: 'var(--text-secondary)',
-        lineHeight: 1.75,
-        fontFamily: 'var(--font-body)'
-      }}>
+      <p style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
         {textData}
       </p>
     );
   }
 
-  // 🛡️ Safe renderer for nested AI data
   const renderSafeString = (data) => {
-    if (!data) return "N/A";
+    if (!data) return 'N/A';
     if (typeof data === 'object') {
       const val = data.value || data.result || '';
       const unit = data.unit || '';
@@ -41,104 +41,144 @@ export default function StructuredHealthCard({ textData }) {
     return String(data);
   };
 
-  return (
-    <div style={{ marginTop: '4px', fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>
+  // Normalise lab results from multiple possible schema shapes
+  const labs = parsedData.data?.lab_results || parsedData.lab_results || parsedData.lab_values || [];
+  const meds = parsedData.data?.medications || parsedData.medications || [];
+  const vitals = parsedData.data?.vitals_extraction || parsedData.vitals || null;
+  const entities = parsedData.data?.clinical_entities || parsedData.clinical_entities || null;
+  const notes = parsedData.notes || parsedData.clinical_notes || null;
+  const summary = parsedData.summary || null;
+  const category = parsedData.category || null;
+  const riskScore = parsedData.risk_score || null;
 
-      {/* 🩸 1. Lab Values Table */}
-      {parsedData.lab_values && parsedData.lab_values.length > 0 && (
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            marginBottom: '10px'
+  return (
+    <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>
+
+      {/* Header row: category + risk score */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        {category && (
+          <span className="badge badge-green">{category}</span>
+        )}
+        <RiskScoreBadge score={riskScore} />
+        {parsedData.is_valid === false && (
+          <span className="badge badge-danger">⚠ Not a Medical Document</span>
+        )}
+      </div>
+
+      {/* AI summary line */}
+      {summary && (
+        <div style={{
+          background: 'var(--violet-50)',
+          border: '1px solid var(--violet-200)',
+          borderLeft: '3px solid var(--violet-500)',
+          borderRadius: 'var(--r-md)',
+          padding: '10px 14px',
+          marginBottom: '14px',
+          fontSize: '13px',
+          color: 'var(--violet-700)',
+          fontStyle: 'italic',
+          lineHeight: 1.65
+        }}>
+          <span style={{
+            display: 'block', fontSize: '9px', fontWeight: 700, letterSpacing: '0.10em',
+            textTransform: 'uppercase', color: 'var(--violet-500)', marginBottom: '3px'
           }}>
-            <span style={{ fontSize: '13px' }}>🩸</span>
-            <h5 style={{
-              margin: 0,
-              color: 'var(--moss-600)',
-              textTransform: 'uppercase',
-              fontSize: '10.5px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              fontFamily: 'var(--font-body)'
-            }}>
-              Extracted Lab Results
-            </h5>
+            ✦ AI Summary
+          </span>
+          {summary}
+        </div>
+      )}
+
+      {/* Vitals Extraction — Module 1 new field */}
+      {vitals && Object.keys(vitals).length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px' }}>❤️</span>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.10em', color: 'var(--moss-700)'
+            }}>Vitals</span>
           </div>
-          <div style={{
-            overflowX: 'auto',
-            borderRadius: '14px',
-            border: '1px solid var(--border-soft)',
-            boxShadow: 'var(--shadow-xs)'
-          }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: '13px',
-              fontFamily: 'var(--font-body)'
-            }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {Object.entries(vitals).map(([k, v]) => (
+              <div key={k} style={{
+                background: 'var(--mint-bg)', border: '1px solid var(--mint-border)',
+                borderRadius: 'var(--r-full)', padding: '4px 12px',
+                fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px'
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{k}:</span>
+                <strong style={{ color: 'var(--moss-800)' }}>{renderSafeString(v)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Entities — Module 1 new field */}
+      {entities && Object.keys(entities).length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px' }}>🏥</span>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.10em', color: 'var(--moss-700)'
+            }}>Clinical Entities</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {Object.entries(entities).filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} style={{
+                background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+                borderRadius: 'var(--r-full)', padding: '4px 12px', fontSize: '12px',
+                display: 'flex', alignItems: 'center', gap: '5px'
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{k.replace(/_/g, ' ')}:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{renderSafeString(v)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lab Results Table */}
+      {labs.length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px' }}>🩸</span>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.10em', color: 'var(--moss-700)'
+            }}>Lab Results</span>
+          </div>
+          <div style={{ overflowX: 'auto', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
               <thead>
                 <tr style={{ background: 'var(--bg-subtle)' }}>
-                  <th style={{
-                    padding: '10px 14px',
-                    borderBottom: '1px solid var(--border-ghost)',
-                    textAlign: 'left',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
-                    color: 'var(--text-muted)'
-                  }}>Test Name</th>
-                  <th style={{
-                    padding: '10px 14px',
-                    borderBottom: '1px solid var(--border-ghost)',
-                    textAlign: 'left',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
-                    color: 'var(--text-muted)'
-                  }}>Result</th>
-                  <th style={{
-                    padding: '10px 14px',
-                    borderBottom: '1px solid var(--border-ghost)',
-                    textAlign: 'left',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
-                    color: 'var(--text-muted)'
-                  }}>Normal Range</th>
+                  {['Test', 'Result', 'Normal Range', 'Flag'].map(h => (
+                    <th key={h} style={{
+                      padding: '8px 12px', borderBottom: '1px solid var(--border-ghost)',
+                      textAlign: 'left', fontSize: '10px', fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)'
+                    }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {parsedData.lab_values.map((lab, idx) => (
-                  <tr key={idx} style={{
-                    background: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-subtle)'
-                  }}>
-                    <td style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid var(--border-ghost)',
-                      fontWeight: 600,
-                      color: 'var(--text-secondary)'
-                    }}>
-                      {renderSafeString(lab.test)}
+                {labs.map((lab, idx) => (
+                  <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : 'var(--bg-subtle)' }}>
+                    <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border-ghost)', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      {renderSafeString(lab.test || lab.name)}
                     </td>
-                    <td style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid var(--border-ghost)',
-                      fontWeight: 700,
-                      color: 'var(--moss-600)'
-                    }}>
-                      {renderSafeString(lab.result)}
+                    <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border-ghost)', fontWeight: 700, color: lab.flag ? 'var(--amber-700)' : 'var(--moss-700)' }}>
+                      {renderSafeString(lab.result ?? lab.value)} {lab.unit || ''}
                     </td>
-                    <td style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid var(--border-ghost)',
-                      color: 'var(--text-muted)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '12px'
-                    }}>
-                      {renderSafeString(lab.range)}
+                    <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border-ghost)', color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+                      {renderSafeString(lab.normal_range || lab.range || '—')}
+                    </td>
+                    <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border-ghost)' }}>
+                      {lab.flag
+                        ? <span className="badge badge-amber">⚠ Abnormal</span>
+                        : <span style={{ fontSize: '11px', color: 'var(--moss-600)', fontWeight: 600 }}>✓ Normal</span>
+                      }
                     </td>
                   </tr>
                 ))}
@@ -148,76 +188,55 @@ export default function StructuredHealthCard({ textData }) {
         </div>
       )}
 
-      {/* 💊 2. Medications List */}
-      {parsedData.medications && parsedData.medications.length > 0 && (
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13px' }}>💊</span>
-            <h5 style={{
-              margin: 0,
-              color: 'var(--moss-600)',
-              textTransform: 'uppercase',
-              fontSize: '10.5px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              fontFamily: 'var(--font-body)'
-            }}>
-              Prescribed Medications
-            </h5>
+      {/* Medications List */}
+      {meds.length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px' }}>💊</span>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.10em', color: 'var(--moss-700)'
+            }}>Medications</span>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {parsedData.medications.map((med, idx) => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+            {meds.map((med, idx) => (
               <div key={idx} style={{
-                background: 'var(--moss-50)',
-                padding: '7px 14px',
-                borderRadius: '9999px',
-                border: '1px solid var(--moss-200)',
-                fontSize: '12.5px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
+                background: 'var(--moss-50)', padding: '5px 12px',
+                borderRadius: 'var(--r-full)', border: '1px solid var(--moss-200)',
+                fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '5px'
               }}>
-                <strong style={{ color: 'var(--moss-700)', fontWeight: 700 }}>
-                  {renderSafeString(med.name)}
+                {med.is_new && (
+                  <span style={{ background: 'var(--violet-500)', color: 'white', fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: 'var(--r-full)', letterSpacing: '0.04em' }}>NEW</span>
+                )}
+                <strong style={{ color: 'var(--moss-800)', fontWeight: 700 }}>
+                  {renderSafeString(med.name || med)}
                 </strong>
-                <span style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>
-                  · {renderSafeString(med.dosage)}
-                </span>
+                {med.dosage && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>· {med.dosage}</span>
+                )}
+                {med.purpose && (
+                  <span style={{ color: 'var(--moss-600)', fontSize: '11px' }}>({med.purpose})</span>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 📝 3. Doctor's Notes */}
-      {parsedData.notes && (
+      {/* Clinical Notes */}
+      {notes && (
         <div style={{
-          background: 'var(--clay-100)',
-          padding: '14px 16px',
-          borderRadius: '14px',
-          borderLeft: '3px solid var(--clay-500)'
+          background: 'var(--amber-50)', borderRadius: 'var(--r-md)',
+          borderLeft: '3px solid var(--amber-500)', padding: '12px 14px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
-            <span style={{ fontSize: '13px' }}>📝</span>
-            <h5 style={{
-              margin: 0,
-              color: 'var(--clay-700)',
-              fontSize: '10.5px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.10em',
-              fontFamily: 'var(--font-body)'
-            }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px' }}>📝</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'var(--amber-700)' }}>
               Clinical Notes
-            </h5>
+            </span>
           </div>
-          <p style={{
-            margin: 0,
-            fontSize: '13.5px',
-            lineHeight: 1.72,
-            color: 'var(--bark-600)'
-          }}>
-            {renderSafeString(parsedData.notes)}
+          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.72, color: 'var(--text-secondary)' }}>
+            {renderSafeString(notes)}
           </p>
         </div>
       )}
