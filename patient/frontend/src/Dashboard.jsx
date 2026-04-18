@@ -670,16 +670,10 @@ export default function Dashboard() {
                                       <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{displayTitle}</div>
                                       <button
                                         title="Rename this record"
-                                        onClick={(e) => { e.stopPropagation(); setRenamingRecord({ id: record.id, value: record.file_name }); }}
-                                        style={{
-                                          background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
-                                          color: 'var(--text-muted)', display: 'flex', alignItems: 'center', opacity: 0.5,
-                                          transition: 'opacity 0.15s'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0.5}
+                                        className="rename-record-btn"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRenamingRecord({ id: record.id, value: record.file_name }); }}
                                       >
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                                       </button>
                                     </>
                                   )}
