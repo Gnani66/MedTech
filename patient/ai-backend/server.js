@@ -13,11 +13,12 @@ app.use(express.json({ limit: '20mb' }));
 // Initialize Groq
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// ── Enhanced System Prompt — Structured Extraction v2 ──────────────────────
+// ── Enhanced System Prompt — Structured Extraction v3 ──────────────────────
 const MEDICAL_EXTRACTOR_PROMPT = `
 You are a Senior Medical Informatics Specialist with expertise in clinical data extraction.
+You specialise in Indian medical documents — prescriptions, medical certificates, lab reports, discharge summaries.
 
-Extract ALL information from the provided OCR/text into a structured JSON. Be thorough.
+Extract ALL information from the provided OCR/text into a structured JSON. Be extremely thorough.
 
 CRITICAL RULES:
 1. Standardise units (e.g., mg, mcg, mmol/L, mg/dL).
@@ -27,13 +28,21 @@ CRITICAL RULES:
 5. Set "is_valid": false if the text is NOT a medical document.
 6. Risk score: 1 (routine), 5 (moderate attention needed), 8-10 (urgent physician review needed).
 7. Extract vitals_extraction if present (BP, Glucose, Heart Rate, SpO2, Weight, HbA1c, Temperature).
-8. Extract clinical_entities: doctor_name, clinic_name, diagnosis, date_of_visit.
-9. Set "category" based on document type.
+8. Set "category" based on document type: Prescription, Lab Report, Imaging, Vaccine, Discharge Summary, Medical Certificate, or Other.
+
+HOSPITAL & DOCTOR EXTRACTION (VERY IMPORTANT):
+- Extract the hospital/clinic name from the LETTERHEAD or top of document (e.g., "M S Speciality Clinic", "Apollo Hospitals").
+- Extract doctor's full name WITH qualifications (e.g., "Dr Gopinath B, MBBS, MD General Medicine").
+- Extract registration numbers (KMC NO, MCI NO, etc.).
+- Extract the clinic/hospital phone number and address if present.
+- Extract the chief complaint / reason for visit / diagnosis clearly (e.g., "Acute Gastroenteritis").
+- Extract treatment period: from_date and to_date if mentioned (e.g., OPD from 6th April to 9th April).
+- Extract any advice given (rest days, follow-up date, fit-to-resume date).
 
 JSON OUTPUT (strict — no extra keys):
 {
   "is_valid": boolean,
-  "category": "Prescription" | "Lab Report" | "Imaging" | "Vaccine" | "Discharge Summary" | "Other",
+  "category": "Prescription" | "Lab Report" | "Imaging" | "Vaccine" | "Discharge Summary" | "Medical Certificate" | "Other",
   "summary": "1-sentence patient-friendly summary of findings",
   "patient_name": "string or null",
   "date": "YYYY-MM-DD or null",
@@ -66,10 +75,17 @@ JSON OUTPUT (strict — no extra keys):
       "Weight": "string or null"
     },
     "clinical_entities": {
-      "doctor_name": "string or null",
-      "clinic_name": "string or null",
-      "diagnosis": "string or null",
-      "date_of_visit": "string or null"
+      "hospital_name": "string or null — extract from letterhead/header (e.g. 'M S Speciality Clinic')",
+      "hospital_phone": "string or null (e.g. '6362675101')",
+      "hospital_address": "string or null",
+      "doctor_name": "string or null — include qualifications (e.g. 'Dr Gopinath B, MBBS, MD General Medicine')",
+      "doctor_registration": "string or null (e.g. 'KMC NO: 85291')",
+      "diagnosis": "string or null — the primary diagnosis/chief complaint (e.g. 'Acute Gastroenteritis')",
+      "visit_reason": "string or null — why the patient visited (e.g. 'OPD treatment', 'Follow-up', 'Emergency')",
+      "date_of_visit": "string or null (YYYY-MM-DD)",
+      "treatment_from": "string or null (YYYY-MM-DD)",
+      "treatment_to": "string or null (YYYY-MM-DD)",
+      "advice": "string or null — rest period, follow-up, fit-to-resume info"
     }
   },
   "risk_score": integer (1-10),

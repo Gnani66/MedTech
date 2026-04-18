@@ -850,3 +850,13 @@
   .stat-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
   .dash-hero { padding: 24px; }
 }
+
+/* Accessibility Focus States */
+:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}

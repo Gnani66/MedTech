@@ -7,81 +7,23 @@ import DoctorsBriefPanel from './DoctorsBriefPanel';
 import HealthSentryPanel from './HealthSentryPanel';
 import './Dashboard.css';
 
-/* ─── Icons (SVG only — no emoji) ─────────────────────────── */
-const IconUpload = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-  </svg>
-);
-const IconShare = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-  </svg>
-);
-const IconUser = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const IconGrid = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-  </svg>
-);
-const IconMenu = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="12" x2="20" y2="12"/>
-    <line x1="4" y1="6" x2="20" y2="6"/>
-    <line x1="4" y1="18" x2="20" y2="18"/>
-  </svg>
-);
-const IconSearch = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-  </svg>
-);
-const IconBell = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-  </svg>
-);
-const IconShield = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
-const IconClock = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-  </svg>
-);
-const IconSpark = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/>
-  </svg>
-);
+import { Upload as IconUpload, Share2 as IconShare, User as IconUser, LayoutGrid as IconGrid, Menu as IconMenu, Search as IconSearch, Bell as IconBell, Shield as IconShield, Clock as IconClock, Sparkles as IconSpark } from 'lucide-react';
 
 /* ─── Filter Categories — plain text, no emoji ── */
 const FILTER_CATEGORIES = [
-  { id: 'all',          label: 'All' },
-  { id: 'lab',          label: 'Labs' },
+  { id: 'all', label: 'All' },
+  { id: 'lab', label: 'Labs' },
   { id: 'prescription', label: 'Prescriptions' },
-  { id: 'imaging',      label: 'Imaging' },
-  { id: 'vaccine',      label: 'Vaccines' },
+  { id: 'imaging', label: 'Imaging' },
+  { id: 'vaccine', label: 'Vaccines' },
 ];
 
 /* ─── QR Permissions ── */
 const QR_PERMISSIONS = [
-  { id: 'Labs',         label: 'Lab Reports' },
+  { id: 'Labs', label: 'Lab Reports' },
   { id: 'Prescription', label: 'Prescriptions' },
-  { id: 'Imaging',      label: 'Imaging' },
-  { id: 'Vaccine',      label: 'Vaccines' },
+  { id: 'Imaging', label: 'Imaging' },
+  { id: 'Vaccine', label: 'Vaccines' },
 ];
 
 /* ─── Group records into Health Episodes (within 14 days) ── */
@@ -127,30 +69,59 @@ function filterRecords(records, category, searchQuery) {
    DASHBOARD
    ═══════════════════════════════════════════════════════════ */
 export default function Dashboard() {
-  const [user, setUser]                   = useState(null);
-  const [profiles, setProfiles]           = useState([]);
+  const [user, setUser] = useState(null);
+  const [profiles, setProfiles] = useState([]);
   const [activeProfile, setActiveProfile] = useState(null);
-  const [records, setRecords]             = useState([]);
-  const [uploading, setUploading]         = useState(false);
+  const [records, setRecords] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [aiBrief, setAiBrief]             = useState('');
-  const [loadingBrief, setLoadingBrief]   = useState(false);
+  const [aiBrief, setAiBrief] = useState('');
+  const [loadingBrief, setLoadingBrief] = useState(false);
   const [pendingRecord, setPendingRecord] = useState(null);
-  const [editedText, setEditedText]       = useState('');
+  const [editedText, setEditedText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeToken, setActiveToken]     = useState(null);
-  const [sidebarOpen, setSidebarOpen]     = useState(false);
-  const [qrCountdown, setQrCountdown]     = useState(600);
+  const [activeToken, setActiveToken] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [qrCountdown, setQrCountdown] = useState(600);
   const [qrPermissions, setQrPermissions] = useState(['Labs', 'Prescription', 'Imaging', 'Vaccine']);
-  const [shareExpiryMs] = useState(10);
-  const [auditToast, setAuditToast]       = useState(null);
-  const [activeFilter, setActiveFilter]   = useState('all');
-  const [searchQuery, setSearchQuery]     = useState('');
+  const [shareExpiryMs, setShareExpiryMs] = useState(10);
+  const [auditToast, setAuditToast] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const navigate      = useNavigate();
-  const fileInputRef  = useRef(null);
-  const countdownRef  = useRef(null);
-  const searchRef     = useRef(null);
+  /* ── Export JSON ── */
+  const handleExportJSON = () => {
+    if (!records || records.length === 0) return alert('No records to export.');
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(records, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute('download', `medbridge-health-summary-${Date.now()}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+  const [expandedRecords, setExpandedRecords] = useState({});
+  const [renamingRecord, setRenamingRecord] = useState(null); // { id, value }
+
+  const toggleRecord = (id) => setExpandedRecords(p => ({ ...p, [id]: !p[id] }));
+
+  /* ── Rename record ── */
+  const handleRenameRecord = async (recordId, newName) => {
+    if (!newName || !newName.trim()) { setRenamingRecord(null); return; }
+    try {
+      const { error } = await supabase.from('medical_records')
+        .update({ file_name: newName.trim() })
+        .eq('id', recordId);
+      if (error) throw error;
+      setRecords(prev => prev.map(r => r.id === recordId ? { ...r, file_name: newName.trim() } : r));
+    } catch (err) { console.error('Rename failed:', err); }
+    setRenamingRecord(null);
+  };
+
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const countdownRef = useRef(null);
+  const searchRef = useRef(null);
 
   /* ── Init ── */
   useEffect(() => {
@@ -183,10 +154,26 @@ export default function Dashboard() {
       .then(({ data }) => setRecords(data || []));
   }, [activeProfile]);
 
+  /* ── Realtime Audit Subscription ── */
+  useEffect(() => {
+    if (!activeProfile) return;
+
+    const channel = supabase
+      .channel('public:audit_logs')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs', filter: `patient_id=eq.${activeProfile.id}` }, (payload) => {
+        if (payload.new.action === 'doctor_viewed') {
+          setAuditToast(`A doctor has viewed your records at ${new Date(payload.new.created_at).toLocaleTimeString()}`);
+          setTimeout(() => setAuditToast(null), 8000);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [activeProfile]);
+
   /* ── QR countdown ── */
   useEffect(() => {
     if (showShareModal && activeToken) {
-      setQrCountdown(shareExpiryMs * 60);
       clearInterval(countdownRef.current);
       countdownRef.current = setInterval(() => {
         setQrCountdown(prev => {
@@ -196,7 +183,7 @@ export default function Dashboard() {
       }, 1000);
     }
     return () => clearInterval(countdownRef.current);
-  }, [showShareModal, activeToken, shareExpiryMs]);
+  }, [showShareModal, activeToken]);
 
   /* ── Upload ── */
   const handleFileUpload = async (e) => {
@@ -265,6 +252,7 @@ export default function Dashboard() {
         .select();
       if (error) throw error;
       setActiveToken(data[0].id);
+      setQrCountdown(shareExpiryMs * 60);
       setShowShareModal(true);
     } catch (err) { console.error(err); alert(`Error generating share link: ${err.message}`); }
   };
@@ -272,12 +260,20 @@ export default function Dashboard() {
   const togglePermission = (id) =>
     setQrPermissions(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
 
-  /* ── Loading screen ── */
+  /* ── Skeleton Loading ── */
   if (!user || !activeProfile) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-        <div style={{ width: '36px', height: '36px', border: '2px solid var(--border)', borderTopColor: 'var(--moss-700)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading your vault…</p>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', display: 'flex' }}>
+        <div style={{ width: '240px', background: 'var(--moss-800)', padding: '24px', flexShrink: 0 }}>
+          <div style={{ height: '24px', width: '120px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginBottom: '40px' }} />
+          {[1, 2, 3, 4].map(i => <div key={i} style={{ height: '20px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '16px' }} />)}
+        </div>
+        <div style={{ flex: 1, padding: '32px' }}>
+          <div style={{ height: '180px', width: '100%', background: 'var(--border-soft)', borderRadius: '16px', marginBottom: '24px', animation: 'breathe 2s infinite' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+            {[1, 2, 3, 4].map(i => <div key={i} style={{ height: '90px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)' }} />)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -288,7 +284,7 @@ export default function Dashboard() {
   const qrMins = Math.floor(qrCountdown / 60);
   const qrSecs = String(qrCountdown % 60).padStart(2, '0');
   let pendingParsed = null;
-  try { pendingParsed = editedText ? JSON.parse(editedText) : null; } catch {}
+  try { pendingParsed = editedText ? JSON.parse(editedText) : null; } catch { /* ignore parse error */ }
   const firstName = activeProfile.full_name?.split(' ')[0] || 'Patient';
 
   return (
@@ -309,15 +305,15 @@ export default function Dashboard() {
 
         <nav className="sidebar-nav">
           <div className="sidebar-item active">
-            <span className="sidebar-item-icon"><IconGrid /></span>
+            <span className="sidebar-item-icon"><IconGrid size={15} strokeWidth={2} /></span>
             Health Vault
           </div>
           <div className="sidebar-item" onClick={() => navigate('/profile')}>
-            <span className="sidebar-item-icon"><IconUser /></span>
+            <span className="sidebar-item-icon"><IconUser size={14} strokeWidth={2} /></span>
             Health Profile
           </div>
           <div className="sidebar-item" onClick={handleGenerateShareToken}>
-            <span className="sidebar-item-icon"><IconShare /></span>
+            <span className="sidebar-item-icon"><IconShare size={14} strokeWidth={2} /></span>
             Share with Doctor
           </div>
         </nav>
@@ -369,8 +365,8 @@ export default function Dashboard() {
 
         {/* Topbar */}
         <header className="topbar">
-          <button className="topbar-hamburger" onClick={() => setSidebarOpen(o => !o)}>
-            <IconMenu />
+          <button className="topbar-hamburger" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle Navigation Sidebar">
+            <IconMenu size={18} strokeWidth={2} />
           </button>
           <div className="topbar-breadcrumb">
             <span className="topbar-breadcrumb-root">MedBridge</span>
@@ -378,7 +374,7 @@ export default function Dashboard() {
             <span className="topbar-title">Health Vault</span>
           </div>
           <div className="topbar-search" onClick={() => searchRef.current?.focus()}>
-            <IconSearch />
+            <IconSearch size={13} strokeWidth={2} />
             <input
               ref={searchRef}
               placeholder="Search records"
@@ -387,8 +383,8 @@ export default function Dashboard() {
             />
           </div>
           <div className="topbar-right">
-            <button className="topbar-icon-btn" title="Notifications">
-              <IconBell />
+            <button className="topbar-icon-btn" title="Notifications" aria-label="View notifications">
+              <IconBell size={16} strokeWidth={2} />
             </button>
             <div className="topbar-avatar" onClick={() => navigate('/profile')}>
               {firstName[0]}
@@ -401,7 +397,7 @@ export default function Dashboard() {
           {/* Audit toast */}
           {auditToast && (
             <div className="audit-toast" style={{ marginBottom: '16px' }}>
-              <IconBell /> {auditToast}
+              <IconBell size={16} strokeWidth={2} /> {auditToast}
             </div>
           )}
 
@@ -437,9 +433,9 @@ export default function Dashboard() {
           <div className="stat-strip">
             {[
               { label: 'Total Records', value: records.length, delta: 'in your vault' },
-              { label: 'Profiles',      value: profiles.length, delta: 'family care' },
-              { label: 'AI Modules',    value: 5,                delta: 'active' },
-              { label: 'Encryption',   value: '256',             delta: 'bit AES' },
+              { label: 'Profiles', value: profiles.length, delta: 'family care' },
+              { label: 'AI Modules', value: 5, delta: 'active' },
+              { label: 'Encryption', value: '256', delta: 'bit AES' },
             ].map(s => (
               <div key={s.label} className="stat-card">
                 <span className="stat-label">{s.label}</span>
@@ -504,12 +500,12 @@ export default function Dashboard() {
                 <div className="records-card-head">
                   <div className="section-head">
                     <span className="section-title">Upload Document</span>
-                    <span className="ai-badge"><IconSpark /> AI-Processed</span>
+                    <span className="ai-badge"><IconSpark size={13} strokeWidth={2} /> AI-Processed</span>
                   </div>
                 </div>
                 <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} accept="image/*,.pdf" />
                 <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
-                  <div className="upload-zone-icon"><IconUpload /></div>
+                  <div className="upload-zone-icon"><IconUpload size={15} strokeWidth={2} /></div>
                   <div className="upload-zone-title">
                     {uploading ? 'AI is reading your document…' : `Drop a file for ${firstName}`}
                   </div>
@@ -526,7 +522,7 @@ export default function Dashboard() {
               </div>
 
               {/* Module 2: Doctor's View */}
-              <DoctorsBriefPanel records={records} brief={aiBrief} loading={loadingBrief} onGenerate={handleGenerateBrief} />
+              <DoctorsBriefPanel records={records} brief={aiBrief} loading={loadingBrief} onGenerate={handleGenerateBrief} activeProfile={activeProfile} />
 
               {/* Module 4: Timeline */}
               <div className="section-head" style={{ marginBottom: '14px' }}>
@@ -556,16 +552,75 @@ export default function Dashboard() {
                       </div>
                       {episode.map(record => {
                         let riskScore = 0;
-                        try { riskScore = JSON.parse(record.extracted_text)?.risk_score || 0; } catch {}
+                        let clinicalInfo = null;
+                        try {
+                          const parsed = JSON.parse(record.extracted_text);
+                          riskScore = parsed?.risk_score || 0;
+                          const ent = parsed?.data?.clinical_entities || parsed?.clinical_entities || null;
+                          clinicalInfo = {
+                            hospital: ent?.hospital_name || ent?.clinic_name || null,
+                            doctor: ent?.doctor_name || null,
+                            diagnosis: ent?.diagnosis || null,
+                            category: parsed?.category || null,
+                          };
+                        } catch { /* ignore parse error */ }
                         const riskClass = riskScore >= 7 ? 'risk-high' : riskScore >= 4 ? 'risk-medium' : riskScore > 0 ? 'risk-low' : '';
+                        const isExpanded = !!expandedRecords[record.id];
+                        const displayTitle = record.file_name;
+                        const isRenaming = renamingRecord?.id === record.id;
                         return (
                           <div key={record.id} className={`timeline-record-card${riskClass ? ` ${riskClass}` : ''}`}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isExpanded ? '14px' : '0', gap: '12px', flexWrap: 'wrap' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{record.file_name}</div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                                  {new Date(record.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                  {record.document_type && <span style={{ marginLeft: '6px', fontWeight: 500 }}>· {record.document_type}</span>}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                  {isRenaming ? (
+                                    <input
+                                      autoFocus
+                                      defaultValue={renamingRecord.value}
+                                      onBlur={(e) => handleRenameRecord(record.id, e.target.value)}
+                                      onKeyDown={(e) => { if (e.key === 'Enter') handleRenameRecord(record.id, e.target.value); if (e.key === 'Escape') setRenamingRecord(null); }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{
+                                        fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)',
+                                        background: 'var(--bg-subtle)', border: '1.5px solid var(--moss-400)',
+                                        borderRadius: 'var(--r-md)', padding: '3px 10px', outline: 'none',
+                                        width: '100%', maxWidth: '360px', fontFamily: 'inherit'
+                                      }}
+                                    />
+                                  ) : (
+                                    <>
+                                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{displayTitle}</div>
+                                      <button
+                                        title="Rename this record"
+                                        onClick={(e) => { e.stopPropagation(); setRenamingRecord({ id: record.id, value: record.file_name }); }}
+                                        style={{
+                                          background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
+                                          color: 'var(--text-muted)', display: 'flex', alignItems: 'center', opacity: 0.5,
+                                          transition: 'opacity 0.15s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0.5}
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                      </button>
+                                    </>
+                                  )}
+                                  {clinicalInfo?.category && (
+                                    <span style={{
+                                      background: 'var(--moss-50)', border: '1px solid var(--moss-200)',
+                                      color: 'var(--moss-700)', padding: '1px 8px', borderRadius: 'var(--r-full)',
+                                      fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em'
+                                    }}>{clinicalInfo.category}</span>
+                                  )}
+                                </div>
+                                {clinicalInfo?.diagnosis && (
+                                  <div style={{ fontSize: '12.5px', color: 'var(--amber-700)', fontWeight: 600, marginBottom: '2px' }}>
+                                    {clinicalInfo.diagnosis}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                  <span>{new Date(record.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                  {clinicalInfo?.doctor && <span>· {clinicalInfo.doctor}</span>}
                                 </div>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -574,10 +629,17 @@ export default function Dashboard() {
                                     Risk {riskScore}/10
                                   </span>
                                 )}
-                                <a href={record.file_url} target="_blank" rel="noreferrer" className="record-action">View</a>
+                                <a href={record.file_url} target="_blank" rel="noreferrer" className="record-action" onClick={(e) => e.stopPropagation()}>Source</a>
+                                <button
+                                  className="record-action"
+                                  onClick={() => toggleRecord(record.id)}
+                                  style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}
+                                >
+                                  {isExpanded ? 'Collapse ↑' : 'Expand ↓'}
+                                </button>
                               </div>
                             </div>
-                            <StructuredHealthCard textData={record.extracted_text} />
+                            {isExpanded && <StructuredHealthCard textData={record.extracted_text} />}
                           </div>
                         );
                       })}
@@ -600,7 +662,6 @@ export default function Dashboard() {
             {/* Right column */}
             <div className="right-col">
 
-              {/* Module 5: AI Sentry */}
               <HealthSentryPanel records={records} />
 
               {/* Health Identity */}
@@ -611,10 +672,10 @@ export default function Dashboard() {
                 </div>
                 {[
                   { label: 'Blood Group', value: activeProfile.blood_group },
-                  { label: 'Age',         value: activeProfile.age },
-                  { label: 'Weight',      value: activeProfile.weight_kg ? `${activeProfile.weight_kg} kg` : null },
-                  { label: 'Height',      value: activeProfile.height_cm ? `${activeProfile.height_cm} cm` : null },
-                  { label: 'Phone',       value: activeProfile.phone },
+                  { label: 'Age', value: activeProfile.age },
+                  { label: 'Weight', value: activeProfile.weight_kg ? `${activeProfile.weight_kg} kg` : null },
+                  { label: 'Height', value: activeProfile.height_cm ? `${activeProfile.height_cm} cm` : null },
+                  { label: 'Phone', value: activeProfile.phone },
                 ].map(row => (
                   <div key={row.label} className="health-row">
                     <span className="health-row-label">{row.label}</span>
@@ -630,16 +691,19 @@ export default function Dashboard() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button onClick={() => fileInputRef.current?.click()} className="primary-btn" style={{ justifyContent: 'flex-start', borderRadius: 'var(--r-md)' }}>
-                    <IconUpload /> Upload Document
+                    <IconUpload size={15} strokeWidth={2} /> Upload Document
                   </button>
                   <button
                     onClick={handleGenerateShareToken}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--amber-50)', border: '1px solid var(--amber-100)', borderRadius: 'var(--r-md)', color: 'var(--amber-600)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'background var(--t)' }}
                   >
-                    <IconShare /> Share with Doctor
+                    <IconShare size={14} strokeWidth={2} /> Share with Doctor
+                  </button>
+                  <button onClick={handleExportJSON} className="secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-start' }}>
+                    <IconUpload size={14} strokeWidth={2} style={{ transform: 'rotate(180deg)' }} /> Export JSON
                   </button>
                   <button onClick={() => navigate('/profile')} className="secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-start' }}>
-                    <IconUser /> Manage Profile
+                    <IconUser size={14} strokeWidth={2} /> Manage Profile
                   </button>
                 </div>
               </div>
@@ -671,7 +735,7 @@ export default function Dashboard() {
           <div className="modal-content" style={{ maxWidth: '600px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <h3>Review Extraction</h3>
-              <span className="ai-badge"><IconSpark /> AI</span>
+              <span className="ai-badge"><IconSpark size={13} strokeWidth={2} /> AI</span>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
               Verify the AI-extracted data before saving to your vault.
@@ -723,7 +787,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
               <h3>Secure Health Share</h3>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <IconClock /> {qrMins}:{qrSecs}
+                <IconClock size={12} strokeWidth={2} /> {qrMins}:{qrSecs}
               </span>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '0', textAlign: 'left' }}>
@@ -744,6 +808,23 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                Token Expiry Time
+              </div>
+              <select
+                value={shareExpiryMs}
+                onChange={(e) => setShareExpiryMs(Number(e.target.value))}
+                style={{ width: '100%', padding: '6px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', fontSize: '13px', outline: 'none', background: 'var(--bg-panel)', color: 'var(--text-primary)' }}
+              >
+                <option value={5}>5 Minutes</option>
+                <option value={10}>10 Minutes</option>
+                <option value={30}>30 Minutes</option>
+                <option value={60}>1 Hour</option>
+                <option value={1440}>24 Hours</option>
+              </select>
             </div>
             {/* QR Code — white background, no mint blob */}
             <div style={{ padding: '20px', background: 'var(--bg-subtle)', borderRadius: 'var(--r-lg)', border: '1px solid var(--border)', display: 'inline-block', marginBottom: '16px' }}>

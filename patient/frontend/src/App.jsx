@@ -156,30 +156,6 @@ const Login = () => {
           <p className="auth-hero-subtitle">
             Access your complete medical history, upcoming appointments, and health insights — all in one secure, private space.
           </p>
-          <div className="auth-hero-features">
-            {['256-bit Encrypted', 'HIPAA Compliant', '24/7 Access', 'Zero Data Selling'].map((f) => (
-              <div className="auth-feature-pill" key={f}>
-                <span className="auth-feature-pill-dot" />
-                {f}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="auth-hero-stats">
-          <div className="auth-stat-card">
-            <div className="auth-stat-card-value">256‑bit</div>
-            <div className="auth-stat-card-label">Encryption</div>
-          </div>
-          <div className="auth-stat-card">
-            <div className="auth-stat-card-value">HIPAA</div>
-            <div className="auth-stat-card-label">Compliant</div>
-          </div>
-          <div className="auth-stat-card">
-            <div className="auth-stat-card-value">24 / 7</div>
-            <div className="auth-stat-card-label">Availability</div>
-          </div>
         </div>
       </div>
 
@@ -298,21 +274,7 @@ const Login = () => {
           <Link to="/signup">Create a free account</Link>
         </p>
 
-        {/* Trust indicators */}
-        <div className="auth-trust-row">
-          <div className="auth-trust-item">
-            <IconShield />
-            End-to-end encrypted
-          </div>
-          <div className="auth-trust-item">
-            <IconShield />
-            HIPAA compliant
-          </div>
-          <div className="auth-trust-item">
-            <IconShield />
-            Zero data selling
-          </div>
-        </div>
+
       </div>
 
     </div>

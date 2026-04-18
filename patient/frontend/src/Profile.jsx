@@ -36,11 +36,38 @@ export default function Profile() {
   const [saving, setSaving]   = useState(false);
   const [profile, setProfile] = useState({
     full_name: '', phone: '', age: '', gender: '',
-    blood_group: '', weight_kg: '', height_cm: ''
+    blood_group: '', weight_kg: '', height_cm: '',
+    allergies: [], chronic_conditions: [],
+    emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_relation: ''
   });
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [addingMember, setAddingMember]       = useState(false);
   const [newMember, setNewMember]             = useState({ full_name: '', age: '', gender: '' });
+  
+  const [otherAllergy, setOtherAllergy] = useState('');
+  const [otherCondition, setOtherCondition] = useState('');
+
+  const commonAllergies = ["Penicillin", "Sulfa Drugs", "Peanuts", "Latex", "Pollen", "Dust Mites", "Animal Dander", "None"];
+  const commonConditions = ["Hypertension", "Type 1 Diabetes", "Type 2 Diabetes", "Asthma", "Thyroid Disorder", "None"];
+
+  const toggleArrayItem = (field, item) => {
+    setProfile(p => {
+      const arr = p[field] || [];
+      if (item === "None") return { ...p, [field]: ["None"] };
+      const newArr = arr.includes(item) ? arr.filter(i => i !== item) : [...arr.filter(i => i !== "None"), item];
+      return { ...p, [field]: newArr };
+    });
+  };
+
+  const handleAddOther = (field, value, setter) => {
+    if (!value.trim()) return;
+    setProfile(p => {
+      const arr = p[field] || [];
+      const newArr = arr.includes(value.trim()) ? arr : [...arr.filter(i => i !== "None"), value.trim()];
+      return { ...p, [field]: newArr };
+    });
+    setter('');
+  };
 
   const navigate = useNavigate();
 
@@ -51,15 +78,15 @@ export default function Profile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      const newId = crypto.randomUUID();
-      const { error } = await supabase.from('user_profiles').insert([{
-        id: newId,
+      // Don't set 'id' explicitly — the table's `id` column references auth.users(id)
+      // so a random UUID will cause a 409 FK conflict. Let Supabase auto-generate it.
+      const { data: inserted, error } = await supabase.from('user_profiles').insert([{
         parent_id: user.id,
         full_name: newMember.full_name,
         age: newMember.age === '' || newMember.age == null ? null : parseInt(newMember.age, 10),
         gender: newMember.gender,
         updated_at: new Date().toISOString(),
-      }]);
+      }]).select();
       
       if (error) throw error;
       
@@ -85,7 +112,16 @@ export default function Profile() {
             .eq('id', user.id)
             .maybeSingle(); // 👈 Fixes 406 Not Acceptable when 0 rows are found
           if (error && error.code !== 'PGRST116') throw error;
-          if (data) setProfile(data);
+          if (data) {
+            setProfile({
+              ...data,
+              allergies: data.allergies || [],
+              chronic_conditions: data.chronic_conditions || [],
+              emergency_contact_name: data.emergency_contact_name || '',
+              emergency_contact_phone: data.emergency_contact_phone || '',
+              emergency_contact_relation: data.emergency_contact_relation || ''
+            });
+          }
         }
       } catch (err) {
         console.error("Error loading profile:", err.message);
@@ -445,6 +481,146 @@ export default function Profile() {
                 onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
               />
+            </div>
+          </div>
+
+          {/* ── Advanced Form Sections ── */}
+          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(222,216,207,0.5)' }}>
+            
+            {/* Allergies */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Allergies</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                {commonAllergies.map(item => {
+                  const isSelected = (profile.allergies || []).includes(item);
+                  return (
+                    <div
+                      key={item}
+                      onClick={() => toggleArrayItem('allergies', item)}
+                      style={{
+                        padding: '6px 12px', borderRadius: 'var(--r-full)', fontSize: '13px', fontWeight: 600,
+                        cursor: 'pointer', border: '1px solid',
+                        background: isSelected ? 'var(--moss-600)' : 'var(--bg-subtle)',
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                        borderColor: isSelected ? 'var(--moss-600)' : 'var(--border)'
+                      }}
+                    >
+                      {item}
+                    </div>
+                  );
+                })}
+                {/* Render any non-common custom allergies the user added */}
+                {(profile.allergies || []).filter(a => !commonAllergies.includes(a)).map(item => (
+                  <div
+                    key={item}
+                    onClick={() => toggleArrayItem('allergies', item)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 'var(--r-full)', fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer', border: '1px solid var(--moss-600)', background: 'var(--moss-600)', color: '#fff'
+                    }}
+                  >
+                    {item} ✕
+                  </div>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="Other allergy (press enter to add)"
+                value={otherAllergy}
+                onChange={e => setOtherAllergy(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddOther('allergies', otherAllergy, setOtherAllergy); }}
+                style={{ ...fieldStyle, marginTop: '8px' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Chronic Conditions */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={labelStyle}>Chronic Conditions</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                {commonConditions.map(item => {
+                  const isSelected = (profile.chronic_conditions || []).includes(item);
+                  return (
+                    <div
+                      key={item}
+                      onClick={() => toggleArrayItem('chronic_conditions', item)}
+                      style={{
+                        padding: '6px 12px', borderRadius: 'var(--r-full)', fontSize: '13px', fontWeight: 600,
+                        cursor: 'pointer', border: '1px solid',
+                        background: isSelected ? 'var(--moss-600)' : 'var(--bg-subtle)',
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                        borderColor: isSelected ? 'var(--moss-600)' : 'var(--border)'
+                      }}
+                    >
+                      {item}
+                    </div>
+                  );
+                })}
+                {(profile.chronic_conditions || []).filter(c => !commonConditions.includes(c)).map(item => (
+                  <div
+                    key={item}
+                    onClick={() => toggleArrayItem('chronic_conditions', item)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 'var(--r-full)', fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer', border: '1px solid var(--moss-600)', background: 'var(--moss-600)', color: '#fff'
+                    }}
+                  >
+                    {item} ✕
+                  </div>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="Other condition (press enter to add)"
+                value={otherCondition}
+                onChange={e => setOtherCondition(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddOther('chronic_conditions', otherCondition, setOtherCondition); }}
+                style={{ ...fieldStyle, marginTop: '8px' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Emergency Contact */}
+            <h3 style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '12px' }}>Emergency Contact</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={labelStyle}>Contact Name</label>
+                <input
+                  type="text"
+                  value={profile.emergency_contact_name || ''}
+                  onChange={e => setProfile({ ...profile, emergency_contact_name: e.target.value })}
+                  style={fieldStyle}
+                  placeholder="e.g. Jane Doe"
+                  onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Phone Number</label>
+                <input
+                  type="text"
+                  value={profile.emergency_contact_phone || ''}
+                  onChange={e => setProfile({ ...profile, emergency_contact_phone: e.target.value })}
+                  style={fieldStyle}
+                  placeholder="e.g. 9876543210"
+                  onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Relation</label>
+                <input
+                  type="text"
+                  value={profile.emergency_contact_relation || ''}
+                  onChange={e => setProfile({ ...profile, emergency_contact_relation: e.target.value })}
+                  style={fieldStyle}
+                  placeholder="e.g. Spouse"
+                  onFocus={e => { e.target.style.borderColor = 'var(--moss-400)'; e.target.style.boxShadow = '0 0 0 4px rgba(93,112,82,0.12)'; }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
             </div>
           </div>
 

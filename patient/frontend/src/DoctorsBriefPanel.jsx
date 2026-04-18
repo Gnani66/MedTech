@@ -1,37 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 /* ═══════════════════════════════════════════════════════════
    DoctorsBriefPanel.jsx — Module 2: High-Velocity 5-Second Summary
    Shows: Active Meds, Vitals w/ % change (Amber), AI Notes (Violet)
    ═══════════════════════════════════════════════════════════ */
 
-const AISpark = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/>
-  </svg>
-);
+import { Sparkles as AISpark, Pill as IconPill, Activity as IconActivity, TrendingUp as IconTrendingUp, TrendingDown as IconTrendingDown, AlertTriangle as IconAlertTriangle } from 'lucide-react';
 
-const IconPill = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-    <path d="m8.5 8.5 7 7"/>
-  </svg>
-);
-
-const IconActivity = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-  </svg>
-);
-
-const IconAlertTriangle = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-    <path d="M12 9v4"/><path d="M12 17h.01"/>
-  </svg>
-);
-
-function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
+function DoctorsBriefPanel({ records, brief, loading, onGenerate, activeProfile }) {
   // Parse structured data from all records
   const allParsed = records.map(r => {
     try { return JSON.parse(r.extracted_text); }
@@ -95,7 +71,7 @@ function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
     <div className="doctors-brief-panel" style={{ marginBottom: '16px' }}>
       <div className="doctors-brief-header">
         <div className="doctors-brief-title">
-          <AISpark />
+          <AISpark size={14} strokeWidth={2} />
           Doctor's View
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -146,16 +122,51 @@ function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
 
       <div className="doctors-brief-body">
 
+        {/* ── Patient-Reported Health Profile ── */}
+        {(activeProfile?.allergies?.length > 0 || activeProfile?.chronic_conditions?.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            {activeProfile?.allergies?.length > 0 && (
+              <div className="brief-section" style={{ marginBottom: 0 }}>
+                <div className="brief-section-label" style={{ color: 'var(--amber-700)' }}>
+                  <IconAlertTriangle size={13} strokeWidth={2} /> Known Allergies
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                  {activeProfile.allergies.map((item, i) => (
+                    <div key={i} style={{ background: 'var(--amber-50)', color: 'var(--amber-800)', border: '1px solid var(--amber-200)', borderRadius: 'var(--r-full)', padding: '2px 8px', fontSize: '11px', fontWeight: 600 }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {activeProfile?.chronic_conditions?.length > 0 && (
+              <div className="brief-section" style={{ marginBottom: 0 }}>
+                <div className="brief-section-label" style={{ color: 'var(--moss-700)' }}>
+                  <IconActivity size={13} strokeWidth={2} /> Chronic Conditions
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                  {activeProfile.chronic_conditions.map((item, i) => (
+                    <div key={i} style={{ background: 'var(--moss-50)', color: 'var(--moss-800)', border: '1px solid var(--moss-200)', borderRadius: 'var(--r-full)', padding: '2px 8px', fontSize: '11px', fontWeight: 600 }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Active Medications ── */}
         {activeMeds.length > 0 && (
           <div className="brief-section">
             <div className="brief-section-label">
-              <IconPill /> Active Medications ({activeMeds.length})
+              <IconPill size={13} strokeWidth={2} /> Active Medications ({activeMeds.length})
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
               {activeMeds.map((med, i) => (
                 <div key={i} className="brief-med-tag" title={med.purpose}>
-                  💊 {med.name}
+                  <IconPill size={13} strokeWidth={2} /> {med.name}
                   {med.dosage && <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>· {med.dosage}</span>}
                 </div>
               ))}
@@ -167,7 +178,7 @@ function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
         {vitalRows.length > 0 && (
           <div className="brief-section">
             <div className="brief-section-label">
-              <IconActivity /> Lab Trends
+              <IconActivity size={13} strokeWidth={2} /> Lab Trends
             </div>
             {vitalRows.map((v, i) => (
               <div key={i} className="brief-vital-row">
@@ -178,8 +189,8 @@ function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
                     <span className={
                       Math.abs(v.changePct) < 3 ? 'vital-change-neutral' :
                       v.changePct > 0 ? 'vital-change-up' : 'vital-change-down'
-                    }>
-                      {v.changePct > 0 ? '↑' : '↓'} {Math.abs(v.changePct)}%
+                    } style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {v.changePct > 0 ? <IconTrendingUp size={12} strokeWidth={2} /> : <IconTrendingDown size={12} strokeWidth={2} />} {Math.abs(v.changePct)}%
                     </span>
                   )}
                 </div>
@@ -206,7 +217,7 @@ function DoctorsBriefPanel({ records, brief, loading, onGenerate }) {
         {/* ── Contraindication / Clinical Notes ── */}
         {notes && (
           <div className="contraindication-note">
-            <strong><IconAlertTriangle /> Decision Support Note</strong>
+            <strong><IconAlertTriangle size={13} strokeWidth={2} /> Decision Support Note</strong>
             {notes.substring(0, 220)}{notes.length > 220 ? '…' : ''}
           </div>
         )}

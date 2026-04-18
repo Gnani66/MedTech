@@ -6,6 +6,7 @@ node_modules/
 .env
 .env.*
 **/.env
+**/.env.*
 
 # Logs
 logs
@@ -15,16 +16,27 @@ npm-debug.log*
 # Build folders
 dist/
 build/
+dist-ssr/
+
+# Coverage
+coverage/
+.nyc_output/
 
 # OS files
 .DS_Store
 Thumbs.db
 
+# IDE
+.vscode/
+.idea/
+*.swp
+
 # Vite
 .vite/
+*.local
 
 # Supabase local
 .supabase/
 
-# Optional: ignore trained OCR data if large
-# ai-backend/eng.traineddata
+# Optional: large OCR model
+# patient/ai-backend/eng.traineddata
