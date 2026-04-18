@@ -111,6 +111,3 @@ MedBridge AI is designed with privacy best practices inspired by HIPAA guideline
 
 ---
 
-## License
-
-MIT © 2025 MedBridge AI
