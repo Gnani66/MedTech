@@ -7,7 +7,11 @@ const sharp = require('sharp');
 const axios = require('axios');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://med-bridgeai.netlify.app', '*'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ limit: '20mb' }));
 
 // Initialize Groq
@@ -281,9 +285,113 @@ app.post('/api/semantic-search', async (req, res) => {
     }
 });
 
+// ── ROUTE 4: CHECK CRITICAL HEALTH ALERT ──────────────────────────────────
+app.post('/api/check-critical-alert', (req, res) => {
+    const { extractedData, patientName, emergencyContactPhone, emergencyContactName } = req.body;
+    if (!extractedData) return res.status(400).json({ error: 'No extracted data provided' });
+
+    try {
+        const parsed = typeof extractedData === 'string' ? JSON.parse(extractedData) : extractedData;
+        const alerts = [];
+
+        // Check risk score
+        const riskScore = parsed.risk_score || 0;
+        if (riskScore >= 7) {
+            alerts.push({ metric: 'Risk Score', value: `${riskScore}/10`, severity: 'critical' });
+        }
+
+        // Check vitals
+        const vitals = parsed.data?.vitals_extraction || parsed.vitals_extraction || {};
+
+        // BP check
+        const bp = vitals.BP || vitals.bp || null;
+        if (bp && typeof bp === 'string') {
+            const bpMatch = bp.match(/(\d+)\s*\/\s*(\d+)/);
+            if (bpMatch) {
+                const sys = parseInt(bpMatch[1]);
+                const dia = parseInt(bpMatch[2]);
+                if (sys > 180 || sys < 90) alerts.push({ metric: 'BP Systolic', value: `${sys} mmHg`, severity: sys > 180 ? 'critical' : 'low' });
+                if (dia > 120 || dia < 60) alerts.push({ metric: 'BP Diastolic', value: `${dia} mmHg`, severity: dia > 120 ? 'critical' : 'low' });
+            }
+        }
+
+        // Glucose check
+        const glucose = vitals.Glucose || vitals.glucose || null;
+        if (glucose) {
+            const gVal = parseFloat(String(glucose).replace(/[^\d.]/g, ''));
+            if (!isNaN(gVal)) {
+                if (gVal > 250) alerts.push({ metric: 'Glucose', value: `${gVal} mg/dL`, severity: 'critical' });
+                if (gVal < 54) alerts.push({ metric: 'Glucose', value: `${gVal} mg/dL`, severity: 'low' });
+            }
+        }
+
+        // SpO2 check
+        const spo2 = vitals.SpO2 || vitals.spo2 || null;
+        if (spo2) {
+            const sVal = parseFloat(String(spo2).replace(/[^\d.]/g, ''));
+            if (!isNaN(sVal) && sVal < 92) alerts.push({ metric: 'SpO2', value: `${sVal}%`, severity: 'critical' });
+        }
+
+        // Heart Rate check
+        const hr = vitals['Heart Rate'] || vitals.heart_rate || null;
+        if (hr) {
+            const hVal = parseFloat(String(hr).replace(/[^\d.]/g, ''));
+            if (!isNaN(hVal)) {
+                if (hVal > 120) alerts.push({ metric: 'Heart Rate', value: `${hVal} bpm`, severity: 'critical' });
+                if (hVal < 50) alerts.push({ metric: 'Heart Rate', value: `${hVal} bpm`, severity: 'low' });
+            }
+        }
+
+        // HbA1c check
+        const hba1c = vitals.HbA1c || vitals.hba1c || null;
+        if (hba1c) {
+            const aVal = parseFloat(String(hba1c).replace(/[^\d.]/g, ''));
+            if (!isNaN(aVal) && aVal > 9) alerts.push({ metric: 'HbA1c', value: `${aVal}%`, severity: 'critical' });
+        }
+
+        // Also check lab results for flagged values
+        const labs = parsed.data?.lab_results || [];
+        labs.forEach(l => {
+            if (l.flag === true) {
+                alerts.push({ metric: l.test || 'Lab Test', value: `${l.result} ${l.unit || ''}`, severity: 'warning' });
+            }
+        });
+
+        if (alerts.length === 0) {
+            return res.json({ alert: false, message: 'No critical anomalies detected.' });
+        }
+
+        // Build WhatsApp message
+        const criticalMetrics = alerts.map(a => `• ${a.metric}: ${a.value} (${a.severity})`).join('\n');
+        const whatsappMessage = `🚨 MedBridge Health Alert\n\nPatient: ${patientName || 'Unknown'}\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nCritical findings detected:\n${criticalMetrics}\n\n${parsed.summary || ''}\n\nPlease contact the patient or their physician immediately.`;
+
+        let waLink = null;
+        if (emergencyContactPhone) {
+            const cleanPhone = emergencyContactPhone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '');
+            const phoneWithCountry = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+            waLink = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(whatsappMessage)}`;
+        }
+
+        console.log(`🚨 CRITICAL ALERT for ${patientName}: ${alerts.length} anomalies detected`);
+
+        res.json({
+            alert: true,
+            alerts,
+            message: whatsappMessage,
+            waLink,
+            emergencyContactName: emergencyContactName || null,
+            emergencyContactPhone: emergencyContactPhone || null
+        });
+
+    } catch (error) {
+        console.error('Alert check error:', error.message);
+        res.status(500).json({ error: 'Failed to evaluate health alert' });
+    }
+});
+
 // ── SERVER START ───────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5002;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 MedBridge Clinical Intelligence Engine running on port ${PORT}`);
     console.log(`   Modules active: OCR 2.0 | Doctor's View | QR Share | Timeline | AI Sentry`);
 });

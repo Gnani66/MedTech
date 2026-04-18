@@ -1,13 +1,17 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import StructuredHealthCard from './StructuredHealthCard';
 import DoctorsBriefPanel from './DoctorsBriefPanel';
 import HealthSentryPanel from './HealthSentryPanel';
+import MedicationReminderPanel from './MedicationReminderPanel';
+import AlertHistoryPanel from './AlertHistoryPanel';
 import './Dashboard.css';
 
 import { Upload as IconUpload, Share2 as IconShare, User as IconUser, LayoutGrid as IconGrid, Menu as IconMenu, Search as IconSearch, Bell as IconBell, Shield as IconShield, Clock as IconClock, Sparkles as IconSpark } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.DEV ? 'http://127.0.0.1:5002' : 'https://medbridge-ai-backend.onrender.com';
 
 /* ─── Filter Categories — plain text, no emoji ── */
 const FILTER_CATEGORIES = [
@@ -91,6 +95,8 @@ export default function Dashboard() {
   const [liveViewMode, setLiveViewMode] = useState(false);
   const [activeSessions, setActiveSessions] = useState([]);
   const [accessHistory, setAccessHistory] = useState([]);
+  const [healthAlerts, setHealthAlerts] = useState([]);
+  const [criticalAlertModal, setCriticalAlertModal] = useState(null);
 
   /* ── Export JSON ── */
   const handleExportJSON = () => {
@@ -169,19 +175,28 @@ export default function Dashboard() {
   }, [navigate]);
 
   /* ── Fetch records & access data ── */
-  const fetchAccessData = useCallback(async () => {
+  const fetchAccessData = () => {
     if (!activeProfile) return;
     const now = new Date().toISOString();
 
-    const { data: st } = await supabase.from('share_tokens')
-      .select('*').eq('patient_id', activeProfile.id).gte('expires_at', now);
-    setActiveSessions(st || []);
+    supabase.from('share_tokens')
+      .select('*').eq('patient_id', activeProfile.id).gte('expires_at', now)
+      .then(({ data: st }) => setActiveSessions(st || []));
 
-    const { data: ah } = await supabase.from('audit_logs')
+    supabase.from('audit_logs')
       .select('*').eq('patient_id', activeProfile.id).eq('action', 'doctor_viewed')
-      .order('created_at', { ascending: false }).limit(5);
-    setAccessHistory(ah || []);
-  }, [activeProfile]);
+      .order('created_at', { ascending: false }).limit(5)
+      .then(({ data: ah }) => setAccessHistory(ah || []));
+  };
+
+  /* ── Fetch health alerts ── */
+  const fetchAlerts = () => {
+    if (!activeProfile) return;
+    supabase.from('health_alerts')
+      .select('*').eq('patient_id', activeProfile.id)
+      .order('sent_at', { ascending: false }).limit(10)
+      .then(({ data }) => setHealthAlerts(data || []));
+  };
 
   useEffect(() => {
     if (!activeProfile) return;
@@ -190,8 +205,12 @@ export default function Dashboard() {
       .order('created_at', { ascending: false })
       .then(({ data }) => setRecords(data || []));
 
+    // eslint-disable-next-line
     fetchAccessData();
-  }, [activeProfile, fetchAccessData]);
+    // eslint-disable-next-line
+    fetchAlerts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProfile]);
 
   /* ── Realtime Audit Subscription ── */
   useEffect(() => {
@@ -210,6 +229,7 @@ export default function Dashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfile]);
 
   /* ── QR countdown ── */
@@ -238,7 +258,7 @@ export default function Dashboard() {
       setUploadProgress(40);
       const { data: { publicUrl } } = supabase.storage.from('medical_records').getPublicUrl(path);
       setUploadProgress(60);
-      const res = await fetch('https://medbridge-ai-backend.onrender.com/api/analyze-prescription', {
+      const res = await fetch(`${API_BASE_URL}/api/analyze-prescription`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: publicUrl })
       });
@@ -255,6 +275,11 @@ export default function Dashboard() {
     }
   };
 
+  const handleAcknowledgeAlert = async (alertId) => {
+    await supabase.from('health_alerts').update({ acknowledged: true }).eq('id', alertId);
+    fetchAlerts();
+  };
+
   /* ── Confirm save ── */
   const handleConfirmSave = async () => {
     try {
@@ -265,16 +290,43 @@ export default function Dashboard() {
       if (nr) {
         await supabase.from('audit_logs').insert([{ record_id: nr[0].id, patient_id: activeProfile.id, action: 'patient_verified' }]);
         setRecords([nr[0], ...records]);
+
+        /* ── Critical alert check ── */
+        try {
+          const alertRes = await fetch(`${API_BASE_URL}/api/check-critical-alert`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              extractedData: editedText,
+              patientName: activeProfile.full_name,
+              emergencyContactPhone: activeProfile.emergency_contact_phone || null,
+              emergencyContactName: activeProfile.emergency_contact_name || null,
+            })
+          });
+          const alertData = await alertRes.json();
+          if (alertData.alert) {
+            // Log alert to Supabase
+            await supabase.from('health_alerts').insert([{
+              patient_id: activeProfile.id,
+              record_id: nr[0].id,
+              alert_type: alertData.alerts.some(a => a.severity === 'critical') ? 'critical_vitals' : 'high_risk',
+              message: alertData.message,
+              contact_phone: activeProfile.emergency_contact_phone || null,
+              contact_name: activeProfile.emergency_contact_name || null,
+            }]);
+            fetchAlerts();
+            setCriticalAlertModal(alertData);
+          }
+        } catch (alertErr) { console.error('Alert check failed:', alertErr); }
       }
       setPendingRecord(null); setAiBrief('');
     } catch (err) { console.error(err); alert('Failed to save record.'); }
   };
 
   /* ── Doctor brief ── */
-  const handleGenerateBrief = useCallback(async () => {
+  const handleGenerateBrief = async () => {
     setLoadingBrief(true);
     try {
-      const res = await fetch('https://medbridge-ai-backend.onrender.com/api/generate-summary', {
+      const res = await fetch(`${API_BASE_URL}/api/generate-summary`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records, patientName: activeProfile?.full_name })
       });
@@ -282,7 +334,7 @@ export default function Dashboard() {
       setAiBrief(d.summary || 'No summary generated.');
     } catch { setAiBrief('Unable to generate. Check the AI server is running.'); }
     finally { setLoadingBrief(false); }
-  }, [records, activeProfile]);
+  };
 
   /* ── QR share token ── */
   const handleGenerateShareToken = async () => {
@@ -835,6 +887,12 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Medication Reminder Panel */}
+              <MedicationReminderPanel records={records} />
+
+              {/* Alert History Panel */}
+              <AlertHistoryPanel alerts={healthAlerts} onAcknowledge={handleAcknowledgeAlert} />
+
               {/* Security Status — green card */}
               <div className="security-card">
                 <span className="security-card-label">Security</span>
@@ -969,6 +1027,61 @@ export default function Dashboard() {
               >
                 Copy Link
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ CRITICAL ALERT MODAL ══ */}
+      {criticalAlertModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconBell size={20} style={{ color: '#ef4444' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#ef4444' }}>⚠️ Critical Health Alert</h3>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>Anomalies detected in the uploaded record</p>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 'var(--r-md)', padding: '14px', marginBottom: '16px' }}>
+              {criticalAlertModal.alerts.map((a, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < criticalAlertModal.alerts.length - 1 ? '1px solid rgba(239,68,68,0.1)' : 'none', fontSize: '13px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.metric}</span>
+                  <span style={{
+                    fontWeight: 700,
+                    color: a.severity === 'critical' ? '#ef4444' : a.severity === 'low' ? '#3b82f6' : '#f59e0b'
+                  }}>{a.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {!activeProfile.emergency_contact_phone ? (
+              <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 'var(--r-md)', padding: '12px', marginBottom: '16px', fontSize: '12px', color: 'var(--amber-700)' }}>
+                <strong>No emergency contact set.</strong> Go to your Profile to add an emergency contact number so alerts can be sent via WhatsApp.
+              </div>
+            ) : (
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Alert will be sent to <strong>{criticalAlertModal.emergencyContactName || 'Emergency Contact'}</strong> ({activeProfile.emergency_contact_phone})
+              </div>
+            )}
+
+            <div className="button-group">
+              <button onClick={() => setCriticalAlertModal(null)} className="secondary-btn">Dismiss</button>
+              {criticalAlertModal.waLink && (
+                <a
+                  href={criticalAlertModal.waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="primary-btn"
+                  style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => setCriticalAlertModal(null)}
+                >
+                  Send Alert via WhatsApp
+                </a>
+              )}
             </div>
           </div>
         </div>
