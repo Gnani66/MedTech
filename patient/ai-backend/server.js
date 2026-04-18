@@ -282,8 +282,12 @@ app.post('/api/semantic-search', async (req, res) => {
 });
 
 // ── SERVER START ───────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
     console.log(`🚀 MedBridge Clinical Intelligence Engine running on port ${PORT}`);
     console.log(`   Modules active: OCR 2.0 | Doctor's View | QR Share | Timeline | AI Sentry`);
 });
+
+// Keep the event loop alive. An underlying dependency (e.g. dotenv > 17.4 or Tesseract worker)
+// incorrectly un-refs handles in some Windows environments, causing the process to auto-close.
+setInterval(() => {}, 1000 * 60 * 60);

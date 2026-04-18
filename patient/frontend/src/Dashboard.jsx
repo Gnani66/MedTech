@@ -88,6 +88,9 @@ export default function Dashboard() {
   const [auditToast, setAuditToast] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [liveViewMode, setLiveViewMode] = useState(false);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [accessHistory, setAccessHistory] = useState([]);
 
   /* ── Export JSON ── */
   const handleExportJSON = () => {
@@ -118,6 +121,26 @@ export default function Dashboard() {
     setRenamingRecord(null);
   };
 
+  /* ── Revoke Live Access ── */
+  const handleRevokeAccess = async () => {
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('share_tokens')
+        .update({ expires_at: now })
+        .eq('patient_id', activeProfile.id)
+        .gte('expires_at', now);
+      if (error) throw error;
+      setLiveViewMode(false);
+      fetchAccessData();
+      setAuditToast('Access revoked successfully. Live session terminated.');
+      setTimeout(() => setAuditToast(null), 5000);
+      setShowShareModal(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to revoke access.');
+    }
+  };
+
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const countdownRef = useRef(null);
@@ -145,14 +168,30 @@ export default function Dashboard() {
     init();
   }, [navigate]);
 
-  /* ── Fetch records ── */
+  /* ── Fetch records & access data ── */
+  const fetchAccessData = useCallback(async () => {
+    if (!activeProfile) return;
+    const now = new Date().toISOString();
+    
+    const { data: st } = await supabase.from('share_tokens')
+      .select('*').eq('patient_id', activeProfile.id).gte('expires_at', now);
+    setActiveSessions(st || []);
+    
+    const { data: ah } = await supabase.from('audit_logs')
+      .select('*').eq('patient_id', activeProfile.id).eq('action', 'doctor_viewed')
+      .order('created_at', { ascending: false }).limit(5);
+    setAccessHistory(ah || []);
+  }, [activeProfile]);
+
   useEffect(() => {
     if (!activeProfile) return;
     supabase.from('medical_records').select('*')
       .eq('patient_id', activeProfile.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => setRecords(data || []));
-  }, [activeProfile]);
+      
+    fetchAccessData();
+  }, [activeProfile, fetchAccessData]);
 
   /* ── Realtime Audit Subscription ── */
   useEffect(() => {
@@ -162,6 +201,8 @@ export default function Dashboard() {
       .channel('public:audit_logs')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs', filter: `patient_id=eq.${activeProfile.id}` }, (payload) => {
         if (payload.new.action === 'doctor_viewed') {
+          setLiveViewMode(true);
+          fetchAccessData();
           setAuditToast(`A doctor has viewed your records at ${new Date(payload.new.created_at).toLocaleTimeString()}`);
           setTimeout(() => setAuditToast(null), 8000);
         }
@@ -197,7 +238,7 @@ export default function Dashboard() {
       setUploadProgress(40);
       const { data: { publicUrl } } = supabase.storage.from('medical_records').getPublicUrl(path);
       setUploadProgress(60);
-      const res = await fetch('http://localhost:5001/api/analyze-prescription', {
+      const res = await fetch('http://localhost:5002/api/analyze-prescription', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: publicUrl })
       });
@@ -207,7 +248,7 @@ export default function Dashboard() {
       setPendingRecord({ file_name: file.name, file_url: publicUrl, document_type: file.type.includes('pdf') ? 'PDF' : 'Image' });
     } catch (err) {
       console.error(err);
-      alert('AI processing error. Is the AI server running on port 5001?');
+      alert('AI processing error. Is the AI server running on port 5002?');
     } finally {
       setUploading(false); setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -233,7 +274,7 @@ export default function Dashboard() {
   const handleGenerateBrief = useCallback(async () => {
     setLoadingBrief(true);
     try {
-      const res = await fetch('http://localhost:5001/api/generate-summary', {
+      const res = await fetch('http://localhost:5002/api/generate-summary', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records, patientName: activeProfile?.full_name })
       });
@@ -252,6 +293,7 @@ export default function Dashboard() {
         .select();
       if (error) throw error;
       setActiveToken(data[0].id);
+      fetchAccessData();
       setQrCountdown(shareExpiryMs * 60);
       setShowShareModal(true);
     } catch (err) { console.error(err); alert(`Error generating share link: ${err.message}`); }
@@ -393,6 +435,42 @@ export default function Dashboard() {
         </header>
 
         <div className="dash-body">
+
+          {/* ── Live View Banner ── */}
+          {liveViewMode && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: 'var(--r-md)',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              animation: 'slideDown 0.3s ease-out'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 600, fontSize: '14px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'breathe 2s infinite' }} />
+                LIVE: A healthcare provider is currently viewing your records
+              </div>
+              <button
+                onClick={handleRevokeAccess}
+                style={{
+                  background: '#ef4444', color: 'white', border: 'none', borderRadius: 'var(--r-md)',
+                  padding: '6px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  transition: 'background 0.2s, transform 0.2s', whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(239,68,68,0.25)'
+                }}
+                onMouseOver={(e) => { e.target.style.background = '#dc2626'; e.target.style.transform = 'translateY(-1px)'; }}
+                onMouseOut={(e) => { e.target.style.background = '#ef4444'; e.target.style.transform = 'none'; }}
+                onMouseDown={(e) => e.target.style.transform = 'translateY(1px)'}
+                onMouseUp={(e) => e.target.style.transform = 'translateY(-1px)'}
+              >
+                Revoke Access
+              </button>
+            </div>
+          )}
 
           {/* Audit toast */}
           {auditToast && (
@@ -707,6 +785,61 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+
+              {/* Access History & Active Sessions */}
+              {(activeSessions.length > 0 || accessHistory.length > 0) && (
+                <div className="health-card">
+                  <div className="section-head" style={{ marginBottom: '14px' }}>
+                    <span className="section-title">Access & Activity</span>
+                    {activeSessions.length > 0 && (
+                      <span className="section-link" style={{ color: '#ef4444' }} onClick={handleRevokeAccess}>Revoke All</span>
+                    )}
+                  </div>
+                  
+                  {activeSessions.length > 0 && (
+                    <div style={{ background: 'var(--bg-subtle)', padding: '10px 12px', borderRadius: 'var(--r-md)', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', animation: 'breathe 2s infinite' }} />
+                        {activeSessions.length} Active Sharing Link{activeSessions.length > 1 ? 's' : ''}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Doctors with links can currently view your records. Revoke access to instantly lock them out.</div>
+                    </div>
+                  )}
+
+                  {accessHistory.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {accessHistory.map((log) => {
+                        const d = new Date(log.created_at);
+                        return (
+                          <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--moss-100)', color: 'var(--moss-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <IconClock size={16} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                                Health Vault Accessed
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                {d.toLocaleDateString()} at {d.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button 
+                        onClick={handleGenerateBrief} 
+                        disabled={loadingBrief}
+                        style={{ marginTop: '8px', padding: '8px', width: '100%', background: 'transparent', border: '1px dashed var(--moss-300)', borderRadius: 'var(--r-md)', color: 'var(--moss-600)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background='var(--moss-50)'}
+                        onMouseOut={e => e.currentTarget.style.background='transparent'}
+                      >
+                         <IconSpark size={14} /> 
+                         {loadingBrief ? 'Generating Summary...' : 'Summarize Profile (What Doctors See)'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Security Status — green card */}
               <div className="security-card">
