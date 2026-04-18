@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Environment variables (SECRETS)
+.env
+.env.*
+**/.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Build folders
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vite
+.vite/
+
+# Supabase local
+.supabase/
+
+# Optional: ignore trained OCR data if large
+# ai-backend/eng.traineddata
