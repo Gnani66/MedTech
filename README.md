@@ -1,113 +1,210 @@
 # MedBridge AI
 
-> The Smart, Secure, and AI-Powered Clinical Intelligence Vault.
+### Smart, Secure, and AI-Powered Clinical Intelligence Vault
 
-[![Built with React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square)](https://react.dev) [![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=flat-square)](https://expressjs.com) [![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square)](https://supabase.com) [![AI](https://img.shields.io/badge/AI-Groq%20Llama--3-F97316?style=flat-square)](https://groq.com) [![Deployed on Netlify](https://img.shields.io/badge/Hosted-Netlify-00C7B7?style=flat-square)](https://netlify.com)
-
----
-
-## Overview
-
-MedBridge AI modernises healthcare record management by bridging the gap between raw, unstructured medical documents and actionable clinical intelligence. Built for patients and clinicians alike, the platform uses OCR and LLM-based extraction to parse prescriptions, lab reports, and discharge summaries — transforming them into a structured, highly visual dashboard.
-
-When every second counts, doctors cannot afford to sift through disorganised physical files. MedBridge addresses this with **Temporal QR Access**, **Emergency WhatsApp Alerts**, and **Smart Medication Reminders**.
+MedBridge AI transforms unstructured medical documents into structured clinical intelligence using OCR and AI. The platform enables patients and healthcare professionals to securely manage, analyze, and share healthcare records through an intelligent and privacy-focused ecosystem.
 
 ---
 
-## Live Demo
+## 🚀 Live Demo
 
-> **No local setup required.** Log in with Google and upload any medical record to explore the full feature set.
-
-👉 [**Launch MedBridge AI →**](https://med-bridgeai.netlify.app/)
+🔗 https://med-bridgeai.netlify.app/
 
 ---
 
-## Features
+# 📌 Overview
 
-### Clinical OCR & AI Extraction
+Healthcare records are often fragmented across prescriptions, lab reports, discharge summaries, and scattered digital files. During emergencies, doctors lose valuable time searching through unorganized records.
 
-- **Intelligent parsing** — Upload any medical document (image or PDF). An OCR + Groq LLM pipeline extracts patient vitals, medications, diagnoses, and lab results with standardised units (e.g., mg/dL, mmHg).
-- **Human-in-the-loop verification** — Patients review AI-extracted data in a structured UI before it is committed to their permanent vault.
+MedBridge AI solves this problem by converting raw medical documents into structured clinical insights using OCR and Large Language Models (LLMs).
 
-### Smart Medication Reminders
-
-- **Duration-aware scheduling** — Distinguishes short-term courses (e.g., Amoxicillin for 5 days) from chronic medications (e.g., Metformin indefinitely).
-- **Visual time slots** — Decodes clinical frequency notation (OD, BD, TDS, SOS) into a readable daily schedule (Morning / Afternoon / Evening / Night).
-- **Auto-expiration** — Short-term medications are automatically retired once the course is complete.
-
-### Emergency Health Alerts (AI Sentry)
-
-- **Vitals monitoring** — During extraction, the AI evaluates physiological markers against clinical thresholds (e.g., Systolic BP > 180 mmHg, Fasting Glucose > 250 mg/dL, SpO₂ < 92%).
-- **Automated WhatsApp alerts** — If an anomaly is detected, the system generates a pre-filled `wa.me` deep-link to notify a designated emergency contact instantly.
-
-### Secure Doctor Access & Audit Trails
-
-- **Temporal QR sharing** — Patients generate time-boxed (e.g., 10 min, 1 hour), permission-scoped (e.g., "Lab records only") links for clinician access.
-- **Live session monitoring** — When a doctor opens the shared portal, the patient receives a real-time "Doctor is viewing" notification and can revoke access via a one-tap kill-switch.
-- **Audit logs** — Every action (document upload, verification, external access) is permanently logged in a Supabase vault with row-level security.
-
-### Authentication & Security
-
-- **Google OAuth via Supabase** — Frictionless sign-in with no password management overhead. Sessions are secured with JWT.
-- **Row-level security (RLS)** — All health records and audit logs are protected by Supabase PostgreSQL RLS policies, ensuring strict data isolation between users.
+The platform provides:
+- AI-powered medical record extraction
+- Smart medication reminders
+- Emergency health alerts
+- Secure doctor access
+- Audit-protected healthcare vaults
 
 ---
 
-## Tech Stack
+# ✨ Features
+
+## 🧠 Clinical OCR & AI Extraction
+
+- Upload prescriptions, lab reports, or discharge summaries
+- OCR extracts raw medical text
+- AI structures:
+  - Medications
+  - Diagnoses
+  - Blood pressure
+  - Glucose levels
+  - Laboratory values
+- Human verification before permanent storage
+
+---
+
+## 💊 Smart Medication Reminders
+
+- Detects chronic vs short-term medications
+- Converts medical notation (OD, BD, TDS, SOS) into readable schedules
+- Visual daily medication tracking
+- Auto-removes expired medication courses
+
+---
+
+## 🚨 Emergency Health Alerts
+
+The AI evaluates extracted vitals against medical thresholds.
+
+Examples:
+- BP > 180 mmHg
+- Glucose > 250 mg/dL
+- SpO₂ < 92%
+
+If abnormalities are detected:
+- Instant WhatsApp emergency alert links are generated
+- Emergency contacts can be notified immediately
+
+---
+
+## 🔐 Secure Doctor Access
+
+### Temporal QR Sharing
+Patients can generate:
+- Time-limited access links
+- Permission-based medical record sharing
+
+### Live Session Monitoring
+- Real-time doctor viewing notifications
+- One-tap access revocation
+
+### Audit Logs
+Every action is securely logged:
+- Uploads
+- Verification actions
+- Record access
+- External sharing
+
+---
+
+# 🛡 Authentication & Security
+
+- Google OAuth Authentication
+- JWT-secured sessions
+- Supabase PostgreSQL Row-Level Security (RLS)
+- User-isolated healthcare vault architecture
+
+---
+
+# 🏗 System Architecture
+
+```text
+User Browser
+    │
+    ├── React + Vite Frontend (Netlify)
+    │       └── Supabase Google OAuth (JWT)
+    │
+    └── Express Backend API
+            ├── Tesseract.js  → OCR Processing
+            ├── Groq SDK      → AI Structuring (Llama 3)
+            └── Supabase DB   → Secure Vault + Audit Logs
+```
+
+---
+
+# 🧰 Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React.js + Vite, React Router v6 |
+| Frontend | React.js + Vite |
 | Backend | Node.js + Express |
-| Database & Auth | Supabase PostgreSQL, Supabase Google OAuth |
-| OCR | `tesseract.js` |
-| AI / LLM | `groq-sdk` (Llama 3) |
-| Frontend hosting | Netlify |
-| Backend hosting | Render |
+| Database | Supabase PostgreSQL |
+| Authentication | Supabase Google OAuth |
+| OCR Engine | tesseract.js |
+| AI/LLM | Groq SDK (Llama 3) |
+| Hosting | Netlify + Render |
 
 ---
 
-## Architecture
+# ⚙️ Local Setup (Windows)
 
-```
-User (Browser)
-    │
-    ├── React + Vite (Netlify)
-    │       └── Supabase Auth (Google OAuth → JWT)
-    │
-    └── Express API (Render)
-            ├── tesseract.js  →  OCR extraction
-            ├── groq-sdk      →  LLM structuring (Llama 3)
-            └── Supabase DB   →  Vault, audit logs (RLS)
-```
-
----
-
-## Local Development
+## 1. Clone Repository
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/medbridge-ai.git
+git clone https://github.com/yourusername/medbridge-ai.git
 cd medbridge-ai
-
-# 2. Install dependencies
-npm install          # frontend
-cd server && npm install   # backend
-
-# 3. Configure environment variables
-cp .env.example .env
-# Fill in SUPABASE_URL, SUPABASE_ANON_KEY, GROQ_API_KEY
-
-# 4. Start development servers
-npm run dev          # frontend (localhost:5173)
-npm run start        # backend  (localhost:3001)
 ```
 
 ---
 
-## Disclaimer
+## 2. Install Dependencies
 
-MedBridge AI is designed with privacy best practices inspired by HIPAA guidelines. It is **not** a certified HIPAA-compliant platform and should not be used as a substitute for regulated medical records systems in clinical environments.
+### Frontend
+
+```bash
+npm install
+```
+
+### Backend
+
+```bash
+cd server
+npm install
+```
 
 ---
 
+## 3. Configure Environment Variables
+
+Create a `.env` file and add:
+
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_key
+GROQ_API_KEY=your_groq_api_key
+```
+
+---
+
+## 4. Start Development Servers
+
+### Frontend
+
+```bash
+npm run dev
+```
+
+Runs on:
+```text
+http://localhost:5173
+```
+
+### Backend
+
+```bash
+npm run start
+```
+
+Runs on:
+```text
+http://localhost:3001
+```
+
+---
+
+# 📈 Future Scope
+
+- AI-powered disease prediction
+- Voice-enabled healthcare assistant
+- Multi-language medical OCR
+- Doctor collaboration portal
+- EHR/FHIR interoperability
+
+---
+
+
+# 📄 Disclaimer
+
+MedBridge AI follows privacy and security best practices inspired by HIPAA guidelines.
+
+This project is intended for educational, research, and innovation purposes only and is not a certified HIPAA-compliant healthcare platform.
